@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Своя игра: Северо-Западный федеральный округ</title>
+<meta name="description" content="Игра «Своя игра» по теме Северо-Западного федерального округа: 4 категории, вопросы на 100, 250, 500 и 1000 очков, таймеры и подсчёт очков игроков.">
+<meta property="og:title" content="Своя игра: Северо-Западный федеральный округ">
+<meta property="og:description" content="СиGame по СЗФО: питерский сленг, Пётр I и Северная война, столицы регионов и рэперы на карте.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%230a2f6b'/><text x='32' y='45' font-size='36' font-family='Georgia,serif' fill='%23f4c14e' text-anchor='middle'>?</text></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="title-block">
+      <h1 class="title">СВОЯ ИГРА</h1>
+      <p class="subtitle">Северо-Западный федеральный округ</p>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn btn--ghost" id="btn-results" title="Таблица результатов">Итоги</button>
+      <button type="button" class="btn btn--ghost" id="btn-sound" aria-pressed="true">Звук: вкл</button>
+      <button type="button" class="btn btn--ghost" id="btn-fullscreen">Во весь экран</button>
+      <button type="button" class="btn btn--danger" id="btn-reset">Новая игра</button>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <section class="board-wrap">
+      <div class="board" id="board" aria-label="Игровое поле"></div>
+
+      <details class="rules">
+        <summary>Правила и управление</summary>
+        <div class="rules__body">
+          <ul>
+            <li>Выберите ячейку — на экране появится вопрос, и через <b>3 секунды</b> (пока идёт отсчёт «Приготовьтесь») запустится таймер: <b>15 секунд</b> на 100 и 250 очков, <b>20 секунд</b> на 500 и 1000.</li>
+            <li>Если время вышло — ответ показывается автоматически, ячейка закрывается и очки никому не начисляются.</li>
+            <li>Если команда успела ответить — нажмите «Показать ответ», введите имя игрока и начислите очки.</li>
+            <li>За неверный ответ снимается столько же очков, сколько можно было заработать за этот вопрос.</li>
+            <li>Вопросы на 1000 очков в категориях «А поребрик лучше!» и «Окно в Европу» — особые: сначала карточка «Удвоить и ответить самому или отдайте вопрос любому игроку», затем сам вопрос.</li>
+            <li>Клавиши: <b>A / S / D / F</b> — выбрать категорию, затем <b>1–4</b> — цена вопроса (100/250/500/1000), <b>Enter</b> — показать ответ, <b>Esc</b> — закрыть окно.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2 class="panel__title">Игроки</h2>
+
+        <form class="add-player" id="player-form" autocomplete="off">
+          <input type="text" id="player-name" list="players-list" placeholder="Имя игрока" aria-label="Имя игрока">
+          <datalist id="players-list"></datalist>
+          <button type="submit" class="btn btn--gold">Добавить</button>
+        </form>
+
+        <ol class="scoreboard" id="scoreboard" aria-live="polite"></ol>
+        <p class="side__hint">Имя можно вводить прямо после вопроса — игрок добавится в таблицу сам.</p>
+      </section>
+
+      <section class="panel panel--stats">
+        <h2 class="panel__title">Счёт</h2>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat__value" id="stat-players">0</span>
+            <span class="stat__label">игроков</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" id="stat-questions">0</span>
+            <span class="stat__label">вопросов сыграно</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" id="stat-points">0</span>
+            <span class="stat__label">очков в игре</span>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="dot dot--answered"></i>отвечен</span>
+          <span><i class="dot dot--timeout"></i>не успели</span>
+          <span><i class="dot dot--skipped"></i>пропущен</span>
+        </div>
+      </section>
+    </aside>
+
+  </main>
+</div>
+
+<!-- ===================== Модальное окно игры ===================== -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__backdrop" data-close="1"></div>
+  <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+
+    <div class="modal__head">
+      <div class="modal__title-wrap">
+        <span class="modal__cat" id="modal-cat"></span>
+        <h2 class="modal__title" id="modal-title"></h2>
+      </div>
+      <span class="modal__points" id="modal-points"></span>
+      <button type="button" class="modal__close" id="modal-close" title="Закрыть (Esc)">✕</button>
+    </div>
+
+    <div class="modal__timer" id="timer" hidden>
+      <div class="timer__value" id="timer-value">15</div>
+      <div class="timer__bar"><i id="timer-fill"></i></div>
+    </div>
+
+    <div class="modal__body" id="modal-body"></div>
+
+    <div class="modal__foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- ===================== Итоги ===================== -->
+<div class="modal" id="results" hidden>
+  <div class="modal__backdrop" data-close="1"></div>
+  <div class="modal__card modal__card--results" role="dialog" aria-modal="true" aria-labelledby="results-title">
+    <div class="modal__head">
+      <div class="modal__title-wrap">
+        <span class="modal__cat">Игра завершена</span>
+        <h2 class="modal__title" id="results-title">Таблица результатов</h2>
+      </div>
+      <button type="button" class="modal__close" data-close="1" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div class="modal__body" id="results-body"></div>
+    <div class="modal__foot">
+      <button type="button" class="btn btn--ghost" data-copy="1">Скопировать итоги</button>
+      <button type="button" class="btn btn--gold" data-close="1">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="assets/questions.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
